@@ -64,21 +64,27 @@ def updateCars(comingIn, comingOut, lotname):
 
 def calc_center(box_points):
     w, h = get_width_height(box_points)
-    cx = box_points[0] + w / 2
-    cy = box_points[1] + h / 2
+    cx = box_points[0][0] + w / 2
+    cy = box_points[1][1] + h / 2
     return cx, cy
 
 
 def get_width_height(box_points):
-    # box_points is in format x1,y1,x2,y2
-    w = abs(box_points[2] - box_points[0])
-    h = abs(box_points[3] - box_points[1])
+    print('BOX POINTS**********', box_points)
+    # box_points is in format (top_left, top_right, bottom_left, bottom_right)
+    w = abs(box_points[0][0] - box_points[1][0])
+    h = abs(box_points[2][1] - box_points[0][1])
     return w, h
 
 
 def calc_area(box_points):
     w, h = get_width_height(box_points)
     return w * h
+    
+def get_box_points(top_left, bottom_right):
+	top_right = (bottom_right[0], top_left[1])
+	bottom_left = (top_left[0], bottom_right[1])
+	return [top_left, top_right, bottom_left, bottom_right]
 
 
 def get_vector(p1, p2):
@@ -106,8 +112,8 @@ class CarTracker:
 
         # Get the location of every object in this frame
         this_frame_objects = []
-        for obj in output_array['detection_boxes_0']:
-            this_frame_objects.append(obj)
+        for i in range(0, output_count):
+            this_frame_objects.append(output_array['detection_boxes_' + str(i)])
 
         # When we have a sufficient number of frames, identify the objects in them
         self._tracked_frames.append(this_frame_objects)
@@ -117,13 +123,17 @@ class CarTracker:
 
     def find_object_in_frame(self, obj1, objs_in_frame):
         num_objs_in_frame = len(objs_in_frame)
-        obj1_center = calc_center(obj1)
+        print('Obj1')
+        box_points_1 = get_box_points(obj1[0], obj1[1])
+        obj1_center = calc_center(box_points_1)
         closest_obj = None
         closest_obj_dist = 10000
 
         for i in range(num_objs_in_frame):
             obj2 = objs_in_frame[i]
-            obj2_center = calc_center(obj2)
+            print('Obj2')
+            box_points_2 =get_box_points(obj2[0], obj2[1])
+            obj2_center = calc_center(box_points_2)
             dist = math.hypot(
                 obj2_center[0] - obj1_center[0], obj2_center[1] - obj1_center[1]
             )
@@ -131,8 +141,10 @@ class CarTracker:
             # TODO there should probably be some sort of thresholding done here
             if dist < closest_obj_dist:
                 closest_obj = obj2
-                closest_obj_dist = dist
-
+                closest_obj_dist = dist 
+                
+        # The current issue is that this is returning a None type so when the unit 
+        # vector is calculated in the identify_objects function, the box points are undefined
         return closest_obj
 
     def identify_objects(self):
@@ -148,6 +160,11 @@ class CarTracker:
                     object_to_frames.append([closest_obj])
 
         # Get unit vectors
+        # this print statement shows that box points of objects are being added before the full
+        # box_points are calculated. Also, there are None type objects being added to the 
+        # object_to_frames array
+        print(object_to_frames)
+        print(frame0)
         vectors = [
             get_vector(calc_center(path[0]), calc_center(path[-1]))
             for path in object_to_frames

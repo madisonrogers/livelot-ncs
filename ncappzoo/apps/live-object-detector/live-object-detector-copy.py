@@ -33,6 +33,9 @@ camera               = None
 # Initialize CarTracker
 car_tracker = CarTracker()
 
+# initialize a frame number variable
+frame_num = 0
+
 # ---- Step 1: Open the enumerated device and get a handle to it -------------
 
 def open_ncs_device():
@@ -82,6 +85,9 @@ def pre_process_image( frame ):
 # ---- Step 4: Read & print inference results from the NCS -------------------
 
 def infer_image( graph, img, frame ):
+	 # increment the frame number each frame 
+    global frame_num 
+    frame_num += 1
 
     # Load the image as a half-precision floating point array
     graph.LoadTensor( img, 'user object' )
@@ -103,34 +109,37 @@ def infer_image( graph, img, frame ):
     if(output_dict['num_detections'] != 0):
         if(output_dict['detection_classes_0'] == 7 or output_dict['detection_classes_0'] == 6 or output_dict['detection_classes_0'] == 14):
             print('detected a motorized vehical')
-            car_tracker.process_frame(0, output_dict, output_dict['num_detections'])
             
-            # Draw bounding boxes around valid detections 
-            #(y1, x1) = output_dict.get('detection_boxes_0')
-            #(y2, x2) = output_dict.get('detection_boxes_1')
+    car_tracker.process_frame(frame_num, output_dict, output_dict['num_detections'])
+            
+    # Print the results (each image/frame may have multiple objects)
+    print( "I found these objects in "
+            + " ( %.2f ms ):" % ( numpy.sum( inference_time ) ) )
 
-            # Prep string to overlay on the image
-            #display_str = ( 
-               # labels[output_dict.get('detection_classes_0')]
-                #+ ": "
-                #+ str( output_dict.get('detection_scores_1' ) )
-                #+ "%" )
+    for i in range( 0, output_dict['num_detections'] ):
+        print( "%3.1f%%\t" % output_dict['detection_scores_' + str(i)] 
+               + labels[ int(output_dict['detection_classes_' + str(i)]) ]
+               + ": Top Left: " + str( output_dict['detection_boxes_' + str(i)][0] )
+               + " Bottom Right: " + str( output_dict['detection_boxes_' + str(i)][1] ) )
 
-            #frame = visualize_output.draw_bounding_box( 
-               #        y1, x1, y2, x2, 
-                 #     frame,
-                    #   thickness=4,
-                       #color=(255, 255, 0),
-                       #display_str=display_str )
-            #print( '\n' )
-   
-   
-    #for i in range( 0, output_dict['num_detections'] ):
-        #if(labels[ int(output_dict['detection_classes_' + str(i)]) ] == "15: person"):
-            #print( "%3.1f%%\t" % output_dict['detection_scores_' + str(i)] 
-                   #+ labels[ int(output_dict['detection_classes_' + str(i)]) ]
-                   #+ ": Top Left: " + str( output_dict['detection_boxes_' + str(i)][0] )
-                   #+ " Bottom Right: " + str( output_dict['detection_boxes_' + str(i)][1] ) )
+        # Draw bounding boxes around valid detections 
+        (y1, x1) = output_dict.get('detection_boxes_' + str(i))[0]
+        (y2, x2) = output_dict.get('detection_boxes_' + str(i))[1]
+
+        # Prep string to overlay on the image
+        display_str = ( 
+                labels[output_dict.get('detection_classes_' + str(i))]
+                + ": "
+                + str( output_dict.get('detection_scores_' + str(i) ) )
+                + "%" )
+
+        frame = visualize_output.draw_bounding_box( 
+                       y1, x1, y2, x2, 
+                       frame,
+                       thickness=4,
+                       color=(255, 255, 0),
+                       display_str=display_str )
+    print( '\n' )
 
         
 
