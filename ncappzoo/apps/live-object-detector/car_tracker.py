@@ -177,22 +177,44 @@ class CarTracker:
         # box_points are calculated. Also, there are None type objects being added to the
         # object_to_frames array
         # IT IS BROKEN HERE :)
-        vectors = [
-            get_vector(
-                calc_center(
-                    get_box_points(
-                        path[0][0][0],
-                        path[0][0][1])
-                ),
-                calc_center(
-                    get_box_points(
-                        path[0][-2][0],
-                        path[0][-2][1]
-                    )
-                )
-            )
-            for path in object_to_frames
-        ]
+        # vectors = [
+        #     get_vector(
+        #         calc_center(
+        #             get_box_points(
+        #                 path[0][0][0],
+        #                 path[0][0][1])
+        #         ),
+        #         calc_center(
+        #             get_box_points(
+        #                 path[0][-2][0],
+        #                 path[0][-2][1]
+        #             )
+        #         )
+        #     )
+        #     for path in object_to_frames
+        # ]
+
+        vectors = []
+        for path in object_to_frames:
+            print(path)
+            print('first point', path[0])
+            print('last point', path[-1])
+            print('*****************')
+            first_point = path[0]
+            last_point = path[-1]
+            first_point_box_points = get_box_points(
+                first_point[0][0], first_point[0][1])
+            last_point_box_points = get_box_points(
+                last_point[0][0], last_point[0][1])
+            print('first_point_box_points', first_point_box_points)
+            print('last_point_box_points', last_point_box_points)
+            first_point_center = calc_center(first_point_box_points)
+            last_point_center = calc_center(last_point_box_points)
+            print('first_point_center', first_point_center)
+            print('last_point_center', last_point_center)
+            vector = get_vector(first_point_center, last_point_center)
+            print('vector', vector)
+            vectors.append(vector)
 
         # Find cars coming in/going out
         coming_in = []
